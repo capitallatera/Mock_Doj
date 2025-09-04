@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta, datetime, timezone
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Form
+import uvicorn
 from app.ratelimit import limiter, RateLimitMiddleware
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -17,12 +18,22 @@ from app.schemas.dropdown import Error401, Error403, Error422, Error500, Default
 import os 
 from app.middlewares.file_proxy import get_file_url
 
-
-router = APIRouter(prefix="/api/v1/auth")
-
 app = FastAPI()
+
+router = APIRouter()
 app.include_router(router)
+app.mount("/v1", router)
+
+@app.get("/testme")
+async def test_me():
+    return {"response": f"API is working"}
+
 # app.add_middleware(RateLimitMiddleware, limiter=limiter) # Temporarily disable for testing
+
+# @router.post("/login", status_code=200)
+# def login_access_token(input: dict):
+#     print(input, "input")
+#     return "test"
 
 
 @router.post("/login", status_code=200, tags=["auth"],
@@ -343,3 +354,7 @@ def validate_token(
         return current_user
     except JWTDecodeError:
         raise HTTPException(status_code=403, detail="Access token expired or invalid")
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8009, reload=True)
